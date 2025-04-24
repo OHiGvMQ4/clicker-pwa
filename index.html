@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4caf50">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clicker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: url('bg.gif') no-repeat center center fixed;
+      background-size: cover;
+      text-align: center;
+      color: #fff;
+    }
+
+    .overlay {
+      background: rgba(0,0,0,0.5);
+      padding: 30px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    #counter {
+      font-size: 50px;
+      margin: 20px 0;
+      color: #ffd54f;
+    }
+
+    #highScore {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #eee;
+    }
+
+    #clickBtn {
+      font-size: 24px;
+      padding: 20px 40px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    #clickBtn:hover {
+      background-color: #388e3c;
+    }
+
+    .shop {
+      margin-top: 30px;
+    }
+
+    .upgrade {
+      background: rgba(255,255,255,0.1);
+      border: 2px solid #ddd;
+      color: #fff;
+      padding: 15px;
+      margin: 10px auto;
+      width: 90%;
+      max-width: 320px;
+      border-radius: 10px;
+    }
+
+    .upgrade button {
+      margin-top: 10px;
+      padding: 8px 20px;
+      background-color: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .upgrade button:hover {
+      background-color: #1976d2;
+    }
+
+    #resetBtn, #toggleSoundBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #e53935;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #toggleSoundBtn {
+      background-color: #ff9800;
+      margin-left: 10px;
+    }
+
+    .click-fx {
+      position: absolute;
+      pointer-events: none;
+      color: #fff;
+      font-size: 20px;
+      animation: rise 1s ease-out forwards;
+    }
+
+    @keyframes rise {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-50px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>💰 Clicker</h1>
+    <div id="counter">0</div>
+    <div id="highScore">🏆 Điểm cao nhất: 0</div>
+    <button id="clickBtn">+ Click!</button>
+
+    <div class="shop">
+      <h2>🛒 Nâng Cấp</h2>
+
+      <div class="upgrade">
+        👉 Tăng +1 mỗi click (Lv <span id="clickLevel">0</span>)<br>
+        Giá: <span id="clickCost">10</span> điểm
+        <br>
+        <button onclick="buyClickUpgrade()">Mua</button>
+      </div>
+
+      <div class="upgrade">
+        ⚙️ Auto-click mỗi giây (Lv <span id="autoLevel">0</span>)<br>
+        Giá: <span id="autoCost">50</span> điểm
+        <br>
+        <button onclick="buyAutoUpgrade()">Mua</button>
+      </div>
+    </div>
+
+    <button id="resetBtn" onclick="resetGame()">🔄 Reset</button>
+    <button id="toggleSoundBtn" onclick="toggleSound()">🔊 Tắt âm</button>
+  </div>
+
+  <audio id="clickSound" src="https://www.myinstants.com/media/sounds/click.mp3"></audio>
+  <audio id="buySound" src="https://www.myinstants.com/media/sounds/cash-register.mp3"></audio>
+
+  <script>
+    let points = parseInt(localStorage.getItem('points')) || 0;
+    let perClick = parseInt(localStorage.getItem('perClick')) || 1;
+    let clickLevel = parseInt(localStorage.getItem('clickLevel')) || 0;
+    let clickCost = parseInt(localStorage.getItem('clickCost')) || 10;
+    let autoLevel = parseInt(localStorage.getItem('autoLevel')) || 0;
+    let autoCost = parseInt(localStorage.getItem('autoCost')) || 50;
+    let highScore = parseInt(localStorage.getItem('highScore')) || 0;
+    let soundOn = true;
+
+    const counterEl = document.getElementById("counter");
+    const highScoreEl = document.getElementById("highScore");
+    const clickLevelEl = document.getElementById("clickLevel");
+    const clickCostEl = document.getElementById("clickCost");
+    const autoLevelEl = document.getElementById("autoLevel");
+    const autoCostEl = document.getElementById("autoCost");
+    const clickSound = document.getElementById("clickSound");
+    const buySound = document.getElementById("buySound");
+    const toggleSoundBtn = document.getElementById("toggleSoundBtn");
+
+    function updateDisplay() {
+      counterEl.innerText = points;
+      highScoreEl.innerText = `🏆 Điểm cao nhất: ${highScore}`;
+      clickLevelEl.innerText = clickLevel;
+      clickCostEl.innerText = clickCost;
+      autoLevelEl.innerText = autoLevel;
+      autoCostEl.innerText = autoCost;
+    }
+
+    function saveGame() {
+      localStorage.setItem('points', points);
+      localStorage.setItem('perClick', perClick);
+      localStorage.setItem('clickLevel', clickLevel);
+      localStorage.setItem('clickCost', clickCost);
+      localStorage.setItem('autoLevel', autoLevel);
+      localStorage.setItem('autoCost', autoCost);
+      localStorage.setItem('highScore', highScore);
+    }
+
+    function clickHandler(e) {
+      points += perClick;
+      if (points > highScore) highScore = points;
+      updateDisplay();
+      saveGame();
+      if (soundOn) {
+        clickSound.currentTime = 0;
+        clickSound.play();
+      }
+      showClickEffect(e.clientX, e.clientY, `+${perClick}`);
+    }
+
+    function buyClickUpgrade() {
+      if (points >= clickCost) {
+        points -= clickCost;
+        clickLevel++;
+        perClick++;
+        clickCost = Math.floor(clickCost * 1.5);
+        updateDisplay();
+        saveGame();
+        if (soundOn) {
+          buySound.currentTime = 0;
+          buySound.play();
+        }
+      } else {
+        alert("Không đủ điểm!");
+      }
+    }
+
+    function buyAutoUpgrade() {
+      if (points >= autoCost) {
+        points -= autoCost;
+        autoLevel++;
+        autoCost = Math.floor(autoCost * 1.7);
+        updateDisplay();
+        saveGame();
+        if (soundOn) {
+          buySound.currentTime = 0;
+          buySound.play();
+        }
+      } else {
+        alert("Không đủ điểm!");
+      }
+    }
+
+    function autoClick() {
+      if (autoLevel > 0) {
+        points += autoLevel;
+        if (points > highScore) highScore = points;
+        updateDisplay();
+        saveGame();
+      }
+    }
+
+    function resetGame() {
+      if (confirm("Bạn muốn chơi lại từ đầu?")) {
+        points = 0;
+        perClick = 1;
+        clickLevel = 0;
+        clickCost = 10;
+        autoLevel = 0;
+        autoCost = 50;
+        highScore = 0;
+        saveGame();
+        updateDisplay();
+      }
+    }
+
+    function toggleSound() {
+      soundOn = !soundOn;
+      toggleSoundBtn.innerText = soundOn ? "🔊 Tắt âm" : "🔇 Bật âm";
+    }
+
+    function showClickEffect(x, y, text) {
+      const fx = document.createElement('div');
+      fx.className = 'click-fx';
+      fx.innerText = text;
+      fx.style.left = (x - 20) + 'px';
+      fx.style.top = (y - 30) + 'px';
+      document.body.appendChild(fx);
+      setTimeout(() => fx.remove(), 1000);
+    }
+
+    document.getElementById("clickBtn").addEventListener("click", clickHandler);
+    setInterval(autoClick, 1000);
+    updateDisplay();
+  </script>
+
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('✅ Service worker đăng ký thành công!', reg))
+        .catch(err => console.error('❌ Lỗi khi đăng ký service worker:', err));
+    }
+  </script>
+</body>
+
+</html>
